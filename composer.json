@@ -21,7 +21,7 @@
         "laravel/helpers": "^1.6",
         "spatie/crawler": "^8.0",
         "spatie/laravel-package-tools": "^1.15.0",
-        "voku/html-min": "^4.5"
+        "voku/html-min": "^5.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",
