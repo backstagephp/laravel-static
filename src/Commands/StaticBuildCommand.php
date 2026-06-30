@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Spatie\Crawler\Crawler;
 use Backstage\Static\Laravel\StaticCache;
 use Backstage\Static\Laravel\Middleware\StaticResponse;
@@ -35,6 +36,10 @@ class StaticBuildCommand extends Command
     {
         if ($this->config->get('static.build.clear_before_start')) {
             $this->call(StaticClearCommand::class);
+        }
+
+        if ($this->config->get('static.build.force_root_url')) {
+            URL::forceRootUrl($this->config->get('app.url'));
         }
 
         match ($driver = $this->config->get('static.driver', 'routes')) {

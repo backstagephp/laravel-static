@@ -207,6 +207,10 @@ class StaticResponse
     {
         $filePath = $request->getPathInfo();
 
+        // Strip a leading "index.php" segment so misconfigured servers (missing URL
+        // rewriting) don't pollute the cached file path, e.g. /index.php/about -> /about.
+        $filePath = preg_replace('#^/index\.php(/|$)#', '/', $filePath);
+
         $filePath .= '?';
 
         if (

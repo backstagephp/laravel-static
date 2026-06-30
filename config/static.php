@@ -39,6 +39,16 @@ return [
         'default_scheme' => 'https',
 
         /**
+         * Force the root URL used when generating links to config('app.url').
+         * Enable this when your server serves the app through index.php (e.g. missing
+         * URL rewriting), which would otherwise leak "index.php" into generated links.
+         * Note: this only affects the 'routes' driver, since the 'crawler' driver
+         * renders pages in a separate HTTP request. It also overrides root URL
+         * generation for the duration of the build process.
+         */
+        'force_root_url' => env('STATIC_FORCE_ROOT_URL', false),
+
+        /**
          * The crawl observer that will be used to handle crawl related events.
          */
         'crawl_observer' => StaticCrawlObserver::class,

@@ -28,6 +28,24 @@ it('can cache a page response', function ($route) {
         ->toBe($route);
 })->with(['hello', '1289bwa jk912UIwa', '*!@)(!', '123=']);
 
+it('strips a leading index.php segment from the cached path', function () {
+    config([
+        'static.files.disk' => 'local',
+    ]);
+
+    $disk = StaticCache::disk();
+
+    Route::get('index.php/about', fn () => 'about')
+        ->middleware(StaticResponse::class);
+
+    $this->get('index.php/about');
+
+    $disk->assertExists('localhost/GET/about?.html');
+    $disk->assertMissing('localhost/GET/index.php/about?.html');
+
+    expect($disk->get('localhost/GET/about?.html'))->toBe('about');
+});
+
 it('minifies HTML', function () {
     config([
         'static.files.disk' => 'local',
