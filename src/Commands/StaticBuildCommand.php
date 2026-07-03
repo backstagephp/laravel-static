@@ -2,8 +2,11 @@
 
 namespace Backstage\Static\Laravel\Commands;
 
+use Backstage\Static\Laravel\Crawler\CrawlerV8Runner;
+use Backstage\Static\Laravel\Crawler\CrawlerV9Runner;
+use Backstage\Static\Laravel\Middleware\StaticResponse;
+use Backstage\Static\Laravel\StaticCache;
 use Exception;
-use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
@@ -11,8 +14,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Spatie\Crawler\Crawler;
-use Backstage\Static\Laravel\StaticCache;
-use Backstage\Static\Laravel\Middleware\StaticResponse;
 
 class StaticBuildCommand extends Command
 {
@@ -93,33 +94,14 @@ class StaticBuildCommand extends Command
 
     public function cacheWithCrawler(): void
     {
-        $bypassHeader = $this->config->get('static.build.bypass_header');
+        // spatie/crawler v9 introduced addObserver() as part of its API
+        // rework; its presence tells the two majors apart. PHPStan analyses
+        // against a single installed major, so it sees this as constant.
+        // @phpstan-ignore function.alreadyNarrowedType
+        $runner = method_exists(Crawler::class, 'addObserver')
+            ? new CrawlerV9Runner($this->config, $this->components)
+            : new CrawlerV8Runner($this->config, $this->components);
 
-        $profile = new ($this->config->get('static.build.crawl_profile'))(
-            $this->config->get('app.url'),
-        );
-
-        $observer = new ($this->config->get('static.build.crawl_observer'))(
-            $this->components,
-        );
-
-        $crawler = Crawler::create([
-            RequestOptions::VERIFY => ! app()->environment('local', 'testing'),
-            RequestOptions::ALLOW_REDIRECTS => true,
-            RequestOptions::HEADERS => [
-                array_key_first($bypassHeader) => array_shift($bypassHeader),
-                'User-Agent' => 'LaravelStatic/1.0',
-            ],
-        ])
-            ->setCrawlObserver($observer)
-            ->setCrawlProfile($profile)
-            ->setConcurrency($this->config->get('static.build.concurrency'))
-            ->setDefaultScheme($this->config->get('static.build.default_scheme'));
-
-        if ($this->config->get('static.build.accept_no_follow')) {
-            $crawler->acceptNofollowLinks();
-        }
-
-        $crawler->startCrawling($this->config->get('app.url'));
+        $runner->crawl();
     }
 }
