@@ -1,0 +1,16 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 3
+			path: config/static.php
+
+		-
+			message: '''
+				#^Call to deprecated method forceRootUrl\(\) of class Illuminate\\Routing\\UrlGenerator\:
+				Use useOrigin$#
+			'''
+			identifier: staticMethod.deprecated
+			count: 1
+			path: src/Commands/StaticBuildCommand.php

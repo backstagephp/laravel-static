@@ -23,6 +23,7 @@ Traditional Laravel applications generate HTML on every request, hitting your da
 
 - PHP 8.1 or higher
 - Laravel 11.0 or higher
+- spatie/crawler v8 or v9 (Composer picks v9 automatically on PHP 8.4+; v8 is used on PHP 8.1–8.3)
 
 ## Installation
 
@@ -250,7 +251,12 @@ StaticCache::clear(['/about', '/contact']);
 
 ### Custom Crawl Observer
 
-Create a custom crawl observer to customize the crawling behavior:
+Create a custom crawl observer to customize the crawling behavior.
+
+> **Note:** the observer must extend the `CrawlObserver` of the spatie/crawler
+> major version you have installed — the method signatures differ between v8
+> (PSR `UriInterface`/`ResponseInterface` parameters) and v9 (string URLs,
+> `CrawlResponse`, `CrawlProgress`). The example below uses the v8 signatures:
 
 ```php
 namespace App\Crawlers;
