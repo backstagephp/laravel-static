@@ -157,6 +157,16 @@ php artisan static:build
 
 When using the `routes` driver, only routes with the `StaticResponse` middleware are cached. When using the `crawler` driver, the crawler starts from your homepage and discovers all internal links.
 
+Rebuild a single page instead of crawling the whole site — the targeted
+counterpart to `static:clear --uri`:
+
+```bash
+php artisan static:build https://example.com/blog/my-post
+```
+
+The page is re-rendered through its own route (no clear, no crawl), so only that
+one cached file is refreshed.
+
 ### Clear Static Cache
 
 Clear all cached static files:
@@ -247,6 +257,37 @@ StaticCache::clear();
 // Clear specific paths
 StaticCache::clear(['/about', '/contact']);
 ```
+
+### Programmatic Page Building
+
+Refresh one or more pages without rebuilding the whole site. Each URL is
+re-rendered through its own route, so only those cached files are written — the
+targeted counterpart to `clear()`:
+
+```php
+use Backstage\Static\Laravel\Facades\StaticCache;
+
+// Rebuild a single page
+StaticCache::build('https://example.com/blog/my-post');
+
+// Rebuild several at once
+StaticCache::build([
+    'https://example.com/blog/my-post',
+    'https://example.com/blog',
+]);
+```
+
+To do this off the request cycle, dispatch the queued `BuildStaticPage` job:
+
+```php
+use Backstage\Static\Laravel\Jobs\BuildStaticPage;
+
+BuildStaticPage::dispatch($post->url());
+```
+
+The job is a no-op when static caching is disabled, and a failed render is
+reported rather than thrown — the page keeps its previous cached copy until the
+next build.
 
 ### Custom Crawl Observer
 
@@ -425,6 +466,18 @@ class Post extends Model
         });
     }
 }
+```
+
+Prefer re-rendering the changed page over clearing it when you want the cache to
+stay warm. Dispatch the `BuildStaticPage` job so the edited page is rebuilt
+immediately instead of being regenerated lazily on the next visit:
+
+```php
+use Backstage\Static\Laravel\Jobs\BuildStaticPage;
+
+static::updated(function (Post $post) {
+    BuildStaticPage::dispatch($post->url());
+});
 ```
 
 ### Scheduled Rebuilds
