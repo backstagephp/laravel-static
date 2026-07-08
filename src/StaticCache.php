@@ -5,6 +5,8 @@ namespace Backstage\Static\Laravel;
 use Illuminate\Config\Repository;
 use Illuminate\Filesystem\Filesystem as Files;
 use Illuminate\Filesystem\FilesystemManager as Storage;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 class StaticCache
 {
@@ -21,6 +23,29 @@ class StaticCache
         }
 
         return $this->files->cleanDirectory($this->disk()->getConfig()['root']);
+    }
+
+    /**
+     * Render one or more URLs into the static cache without crawling the whole
+     * site. Each URL is dispatched through its own route so its StaticResponse
+     * middleware writes a fresh file for just that page — the targeted
+     * counterpart to clear(). A URL whose route isn't static-cached simply
+     * writes nothing; a route that aborts (e.g. a 404) throws, so callers that
+     * refresh pages which may have disappeared should guard or catch.
+     *
+     * @param  string|array<int, string>  $urls
+     */
+    public function build(string|array $urls): void
+    {
+        foreach ((array) $urls as $url) {
+            $request = Request::create($url);
+
+            // Match the crawler's fingerprint so the render is identical to a
+            // full `static:build` pass.
+            $request->headers->set('User-Agent', 'LaravelStatic/1.0');
+
+            Route::dispatchToRoute($request);
+        }
     }
 
     public function disk(?string $override = null)

@@ -2,6 +2,8 @@
 
 namespace Backstage\Static\Laravel\Commands;
 
+use Backstage\Static\Laravel\Middleware\StaticResponse;
+use Backstage\Static\Laravel\StaticCache;
 use Exception;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository;
@@ -11,12 +13,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Spatie\Crawler\Crawler;
-use Backstage\Static\Laravel\StaticCache;
-use Backstage\Static\Laravel\Middleware\StaticResponse;
 
 class StaticBuildCommand extends Command
 {
-    public $signature = 'static:build';
+    public $signature = 'static:build {url? : Build only this URL instead of crawling the whole site}';
 
     public $description = 'Build Static version';
 
@@ -34,6 +34,16 @@ class StaticBuildCommand extends Command
 
     public function handle(): void
     {
+        // A single URL rebuilds just that page: no clear, no crawl — the
+        // targeted counterpart to `static:clear -u`.
+        if ($url = $this->argument('url')) {
+            $this->static->build($url);
+
+            $this->components->info('Built static cache for: '.$url);
+
+            return;
+        }
+
         if ($this->config->get('static.build.clear_before_start')) {
             $this->call(StaticClearCommand::class);
         }
