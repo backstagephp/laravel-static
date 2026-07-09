@@ -46,6 +46,58 @@ it('strips a leading index.php segment from the cached path', function () {
     expect($disk->get('localhost/GET/about?.html'))->toBe('about');
 });
 
+it('does not cache when the request host is not whitelisted', function () {
+    config([
+        'static.files.disk' => 'local',
+        'static.whitelist.hosts' => ['allowed.test'],
+    ]);
+
+    $disk = StaticCache::disk();
+
+    Route::get('blocked', fn () => 'blocked')
+        ->middleware(StaticResponse::class);
+
+    $this->get('http://other.test/blocked');
+
+    $disk->assertMissing('other.test/GET/blocked?.html');
+});
+
+it('caches subdomains matching a wildcard host', function () {
+    config([
+        'static.files.disk' => 'local',
+        'static.whitelist.hosts' => ['*.example.com'],
+    ]);
+
+    $disk = StaticCache::disk();
+
+    Route::get('sub', fn () => 'sub')
+        ->middleware(StaticResponse::class);
+
+    $this->get('http://blog.example.com/sub');
+    $this->get('http://example.com/sub');
+    $this->get('http://other.test/sub');
+
+    $disk->assertExists('blog.example.com/GET/sub?.html');
+    $disk->assertMissing('example.com/GET/sub?.html');
+    $disk->assertMissing('other.test/GET/sub?.html');
+});
+
+it('caches for any host when the whitelist is null', function () {
+    config([
+        'static.files.disk' => 'local',
+        'static.whitelist.hosts' => null,
+    ]);
+
+    $disk = StaticCache::disk();
+
+    Route::get('anywhere', fn () => 'anywhere')
+        ->middleware(StaticResponse::class);
+
+    $this->get('http://random.test/anywhere');
+
+    $disk->assertExists('random.test/GET/anywhere?.html');
+});
+
 it('minifies HTML', function () {
     config([
         'static.files.disk' => 'local',

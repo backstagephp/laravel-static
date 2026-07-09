@@ -16,6 +16,27 @@ return [
      */
     'enabled' => env('STATIC_ENABLED', true),
 
+    /**
+     * Restrict which hostnames static caches may be created for.
+     */
+    'whitelist' => [
+        /**
+         * Whitelist of hostnames for which static caches may be created. Matched
+         * against the request host and supports "*" wildcards, e.g. "*.example.com"
+         * matches any subdomain (but not the apex example.com, which must be listed
+         * separately). When null, caches are created for every hostname. Provide an
+         * array of hostnames to only cache those hosts (e.g. when the app is reachable
+         * through multiple domains). To restrict caching to the app's own hostname
+         * (and its www variant), use:
+         *
+         * 'hosts' => [
+         *     $host = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST),
+         *     'www.' . $host,
+         * ],
+         */
+        'hosts' => null,
+    ],
+
     'build' => [
         /**
          * Clear static files before building static cache.

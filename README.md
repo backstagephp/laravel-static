@@ -115,11 +115,33 @@ Toggle static caching on or off. Useful for disabling in development while keepi
     'concurrency' => 5,               // Number of concurrent HTTP requests
     'accept_no_follow' => true,       // Follow nofollow links when crawling
     'default_scheme' => 'https',      // URL scheme for crawler requests
+    'force_root_url' => env('STATIC_FORCE_ROOT_URL', false), // Force generated links to app.url during builds
     'crawl_observer' => \Backstage\LaravelStatic\Crawler\StaticCrawlObserver::class,
     'crawl_profile' => \Spatie\Crawler\CrawlProfiles\CrawlInternalUrls::class,
     'bypass_header' => [
         'name' => 'X-Laravel-Static',
         'value' => 'off',
+    ],
+],
+```
+
+### Host Whitelist
+
+```php
+'whitelist' => [
+    'hosts' => null,  // null = cache every host; array = only these hosts
+],
+```
+
+Restrict which hostnames static caches may be created for. When `null` (the default), caches are created for every host that hits the middleware. Provide an array of hostnames to only cache those hosts — useful when your app is reachable through multiple domains (e.g. a staging or preview domain) but you only want to cache the canonical ones.
+
+Hostnames are matched against the request host (case-insensitive) and support `*` wildcards — e.g. `*.example.com` matches any subdomain (but not the apex `example.com`, which must be listed separately). To restrict caching to your app's own hostname and its `www` variant:
+
+```php
+'whitelist' => [
+    'hosts' => [
+        $host = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST),
+        'www.' . $host,
     ],
 ],
 ```
@@ -366,6 +388,28 @@ Route::middleware([StaticResponse::class])->group(function () {
 Route::get('/dashboard', [DashboardController::class, 'index']);
 Route::get('/user/{id}', [UserController::class, 'show']); // Has parameters
 ```
+
+### Preventing `index.php` in Cached URLs
+
+If your web server isn't rewriting pretty URLs (missing `try_files` / mod_rewrite), Laravel derives the request root from `index.php` and can leak it into generated links and cache paths — e.g. `/index.php/about` instead of `/about`.
+
+The package guards against this in two ways:
+
+- **Path normalization (always on):** a leading `index.php` segment is stripped from the cached file path, so a page requested as `/index.php/about` is still cached as `about.html`. This applies to both drivers.
+- **Force root URL (opt-in):** enable `force_root_url` so that during a build the root URL used by `url()`, `route()`, and `asset()` is forced to `config('app.url')`, keeping `index.php` out of the links your pages contain:
+
+  ```php
+  // config/static.php
+  'build' => [
+      'force_root_url' => true,
+  ],
+  ```
+
+  ```env
+  STATIC_FORCE_ROOT_URL=true
+  ```
+
+  This affects the `routes` driver (which renders pages in the build process). The `crawler` driver renders each page in a separate HTTP request, so for it the path normalization above is what keeps cache paths clean — the real fix there is correcting your server's URL rewriting.
 
 ### Async Cache Generation
 

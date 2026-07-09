@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Config\Repository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use voku\helper\HtmlMin;
 use Backstage\Static\Laravel\Facades\StaticCache;
 
@@ -63,6 +64,7 @@ class StaticResponse
     {
         return
             $this->config->get('static.enabled') === true &&
+            $this->hostIsAllowed($request) &&
             $response->getStatusCode() == 200 &&
             (
                 $request->isMethod('GET') ||
@@ -70,6 +72,28 @@ class StaticResponse
                 // therefore we treat them the same as GET
                 $request->isMethod('HEAD')
             );
+    }
+
+    /**
+     * Determine whether static caches may be created for the request's host.
+     * A null whitelist allows every host; otherwise only the configured hosts
+     * are cached.
+     */
+    protected function hostIsAllowed(Request $request): bool
+    {
+        $hosts = $this->config->get('static.whitelist.hosts');
+
+        if (is_null($hosts)) {
+            return true;
+        }
+
+        // getHost() is already lowercased by Symfony; lowercase the configured
+        // hosts too so the comparison is case-insensitive (hostnames are per RFC).
+        // Str::is() supports "*" wildcards, e.g. "*.example.com" matches any
+        // subdomain (but not the apex example.com, which must be listed separately).
+        $hosts = array_map('strtolower', (array) $hosts);
+
+        return Str::is($hosts, $request->getHost());
     }
 
     /**
