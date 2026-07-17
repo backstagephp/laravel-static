@@ -11,7 +11,7 @@ use Backstage\Static\Laravel\StaticCache;
 
 class StaticClearCommand extends Command
 {
-    public $signature = 'static:clear {--u|uri=*} {--r|routes=*} {--d|domain=*}';
+    public $signature = 'static:clear {--u|uri=*} {--r|routes=*} {--d|domain=*} {--force : Skip the confirmation prompt}';
 
     public $description = 'Clear static cached files';
 
@@ -20,8 +20,14 @@ class StaticClearCommand extends Command
         parent::__construct();
     }
 
-    public function handle(): void
+    public function handle(): int
     {
+        if (! $this->option('force') && ! $this->confirm('Are you sure you want to clear the static cache?')) {
+            $this->components->info('Static cache clear aborted.');
+
+            return self::SUCCESS;
+        }
+
         $uris = $this->option('uri');
 
         if (! empty($uris)) {
@@ -37,6 +43,8 @@ class StaticClearCommand extends Command
         }
 
         $this->info('✔ Static cache cleared!');
+
+        return self::SUCCESS;
     }
 
     protected function purgeWithRoutes(array $names)
