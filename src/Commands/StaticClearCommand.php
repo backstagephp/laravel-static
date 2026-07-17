@@ -2,12 +2,12 @@
 
 namespace Backstage\Static\Laravel\Commands;
 
+use Backstage\Static\Laravel\StaticCache;
 use Illuminate\Config\Repository;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route as Router;
-use Backstage\Static\Laravel\StaticCache;
 
 class StaticClearCommand extends Command
 {

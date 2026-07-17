@@ -10,4 +10,11 @@ parameters:
     checkOctaneCompatibility: true
     checkModelProperties: true
     checkMissingIterableValueType: false
+    ignoreErrors:
+        # forceRootUrl() is deprecated in Laravel 11.35+ in favour of useOrigin(),
+        # but useOrigin() doesn't exist in the older Laravel 11.x releases this
+        # package still supports, so the call is kept for backwards compatibility.
+        -
+            message: '#Call to deprecated method forceRootUrl\(\) of class Illuminate\\Routing\\UrlGenerator#'
+            path: src/Commands/StaticBuildCommand.php
 
