@@ -255,6 +255,13 @@ php artisan static:clear --domain=example.com
 php artisan static:clear --domain=subdomain.example.com
 ```
 
+Clear only the cached files generated for requests with a query string (e.g.
+`/products?page=2`), keeping the plain query-less pages intact:
+
+```bash
+php artisan static:clear --only-with-query-strings
+```
+
 ## Advanced Usage
 
 ### Multi-Domain Support

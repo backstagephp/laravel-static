@@ -8,10 +8,11 @@ use Illuminate\Console\Command;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route as Router;
+use Illuminate\Support\Str;
 
 class StaticClearCommand extends Command
 {
-    public $signature = 'static:clear {--u|uri=*} {--r|routes=*} {--d|domain=*} {--force : Skip the confirmation prompt}';
+    public $signature = 'static:clear {--u|uri=*} {--r|routes=*} {--d|domain=*} {--only-with-query-strings : Only clear cached files that carry a query string, keeping plain pages} {--force : Skip the confirmation prompt}';
 
     public $description = 'Clear static cached files';
 
@@ -29,6 +30,14 @@ class StaticClearCommand extends Command
         }
 
         $uris = $this->option('uri');
+
+        if ($this->option('only-with-query-strings')) {
+            $cleared = $this->static->clearQueryStrings();
+
+            $this->info('✔ Cleared '.count($cleared).' query string cached '.Str::plural('file', $cleared).'!');
+
+            return self::SUCCESS;
+        }
 
         if (! empty($uris)) {
             $paths = $this->preparePaths($uris);

@@ -198,6 +198,34 @@ it('removes compressed siblings on a targeted clear', function () {
     $disk->assertMissing('localhost/GET/drop?.html.gz');
 });
 
+it('clears only cached files carrying a query string', function () {
+    config([
+        'static.files.disk' => 'local',
+        'static.compression.gzip' => true,
+        'static.files.include_query_string' => true,
+    ]);
+
+    $disk = StaticCache::disk();
+
+    Route::get('reports', fn () => 'report')
+        ->middleware(StaticResponse::class);
+
+    $this->get('reports');
+    $this->get('reports?year=2026');
+
+    $disk->assertExists('localhost/GET/reports?.html');
+    $disk->assertExists('localhost/GET/reports?.html.gz');
+    $disk->assertExists('localhost/GET/reports?year=2026.html');
+    $disk->assertExists('localhost/GET/reports?year=2026.html.gz');
+
+    StaticCache::clearQueryStrings();
+
+    $disk->assertExists('localhost/GET/reports?.html');
+    $disk->assertExists('localhost/GET/reports?.html.gz');
+    $disk->assertMissing('localhost/GET/reports?year=2026.html');
+    $disk->assertMissing('localhost/GET/reports?year=2026.html.gz');
+});
+
 it('minifies HTML', function () {
     config([
         'static.files.disk' => 'local',
