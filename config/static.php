@@ -127,4 +127,48 @@ return [
          */
         'minify_html' => false,
     ],
+
+    /**
+     * Write precompressed copies of each static file alongside the original, so a
+     * web server can serve them directly without compressing on the fly. nginx does
+     * this with `gzip_static on;` (built in) and `brotli_static on;` (requires the
+     * third-party ngx_brotli module); both look for a `<file>.gz` / `<file>.br`
+     * sibling matching the requested URI.
+     */
+    'compression' => [
+        /**
+         * Write a `.gz` copy of each static file. gzip is built into PHP, so this
+         * has no extra dependencies.
+         */
+        'gzip' => env('STATIC_COMPRESS_GZIP', true),
+
+        /**
+         * Compression level for the `.gz` copy (0-9). Higher is smaller but slower.
+         * Compression happens once at cache-write time, so a high level is usually
+         * worth it.
+         */
+        'gzip_level' => 9,
+
+        /**
+         * Write a `.br` (brotli) copy of each static file. Requires the ext-brotli
+         * PHP extension; when it isn't installed this is silently skipped.
+         */
+        'brotli' => env('STATIC_COMPRESS_BROTLI', false),
+
+        /**
+         * Compression quality for the `.br` copy (0-11). 11 is smallest but slow.
+         */
+        'brotli_level' => 11,
+
+        /**
+         * Also keep the uncompressed copy alongside the compressed one(s). Keeping
+         * it lets the web server fall back to plain output for the rare client that
+         * doesn't accept gzip/brotli. Disable it to store only the compressed file
+         * and halve disk usage — this requires serving the compressed file to every
+         * client (e.g. nginx `gzip_static always;` with `gunzip on;`). Ignored when
+         * no compression format actually produced a file, so a page is never left
+         * with nothing to serve.
+         */
+        'keep_uncompressed' => true,
+    ],
 ];
