@@ -26,6 +26,34 @@ class StaticCache
     }
 
     /**
+     * Clear only the cached files that were generated for a request carrying a
+     * query string, leaving the plain (query-less) pages untouched.
+     *
+     * Cached filenames always embed a "?" delimiter before the extension: a
+     * query-less page is stored as "page?.html", while a query-string variant is
+     * stored as "page?foo=bar.html". A non-empty query string is therefore any
+     * file whose "?" is followed by something other than the extension dot —
+     * which also matches the ".gz"/".br" siblings without extra work.
+     *
+     * @return array<int, string> the paths that were deleted
+     */
+    public function clearQueryStrings(): array
+    {
+        $disk = $this->disk();
+
+        $paths = collect($disk->allFiles())
+            ->filter(fn (string $path): bool => (bool) preg_match('/\?[^.]/', basename($path)))
+            ->values()
+            ->all();
+
+        if (! empty($paths)) {
+            $disk->delete($paths);
+        }
+
+        return $paths;
+    }
+
+    /**
      * Expand a list of static file paths to also include their precompressed
      * siblings (.gz / .br), so a targeted clear doesn't leave orphaned compressed
      * copies behind. Deleting a path that doesn't exist is a harmless no-op.
