@@ -36,7 +36,7 @@ class StaticCache
     protected function withCompressedVariants(array $paths): array
     {
         return collect($paths)
-            ->flatMap(fn (string $path) => [$path, $path . '.gz', $path . '.br'])
+            ->flatMap(fn (string $path) => [$path, $path.'.gz', $path.'.br'])
             ->all();
     }
 

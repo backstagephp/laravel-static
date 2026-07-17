@@ -1,7 +1,7 @@
 <?php
 
-use Spatie\Crawler\CrawlProfiles\CrawlInternalUrls;
 use Backstage\Static\Laravel\Crawler\StaticCrawlObserver;
+use Spatie\Crawler\CrawlProfiles\CrawlInternalUrls;
 
 return [
     /**
