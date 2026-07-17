@@ -9,5 +9,17 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
-    checkMissingIterableValueType: false
+    ignoreErrors:
+        # forceRootUrl() is deprecated in Laravel 11.35+ in favour of useOrigin(),
+        # but useOrigin() doesn't exist in the older Laravel 11.x releases this
+        # package still supports, so the call is kept for backwards compatibility.
+        -
+            message: '#Call to deprecated method forceRootUrl\(\) of class Illuminate\\Routing\\UrlGenerator#'
+            path: src/Commands/StaticBuildCommand.php
+        # Calling env() inside a config file is the one place it's correct.
+        # Larastan's rule can't detect the config directory when analysing the
+        # package in isolation, so it flags these false positives.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: config/*.php
 
