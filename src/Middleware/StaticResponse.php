@@ -2,13 +2,13 @@
 
 namespace Backstage\Static\Laravel\Middleware;
 
+use Backstage\Static\Laravel\Facades\StaticCache;
 use Closure;
 use Illuminate\Config\Repository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use voku\helper\HtmlMin;
-use Backstage\Static\Laravel\Facades\StaticCache;
 
 class StaticResponse
 {
@@ -151,12 +151,51 @@ class StaticResponse
         $disk = StaticCache::disk();
 
         if (! $disk->exists('.gitignore')) {
-            $disk->put('.gitignore', '*' . PHP_EOL . '!.gitignore');
+            $disk->put('.gitignore', '*'.PHP_EOL.'!.gitignore');
         }
 
-        if ($response->getContent()) {
-            $disk->put($filePath, $response->getContent(), true);
+        if ($content = $response->getContent()) {
+            $wroteCompressed = $this->writeCompressedVariants($disk, $filePath, $content);
+
+            // Skip the uncompressed copy only when precompression actually
+            // produced a file to serve instead — otherwise we'd store nothing
+            // (e.g. brotli requested but ext-brotli missing).
+            if ($wroteCompressed && ! $this->config->get('static.compression.keep_uncompressed', true)) {
+                $disk->delete($filePath);
+            } else {
+                $disk->put($filePath, $content, true);
+            }
         }
+    }
+
+    /**
+     * Write precompressed siblings (.gz / .br) next to the static file so a web
+     * server can serve them directly (e.g. nginx gzip_static / brotli_static)
+     * instead of compressing on every request. Brotli is skipped silently when
+     * the ext-brotli extension isn't installed. Returns whether at least one
+     * compressed file was written.
+     */
+    protected function writeCompressedVariants($disk, string $filePath, string $content): bool
+    {
+        $wrote = false;
+
+        if ($this->config->get('static.compression.gzip')) {
+            $level = (int) $this->config->get('static.compression.gzip_level', 9);
+
+            $disk->put($filePath.'.gz', gzencode($content, $level), true);
+
+            $wrote = true;
+        }
+
+        if ($this->config->get('static.compression.brotli') && function_exists('brotli_compress')) {
+            $level = (int) $this->config->get('static.compression.brotli_level', 11);
+
+            $disk->put($filePath.'.br', brotli_compress($content, $level), true);
+
+            $wrote = true;
+        }
+
+        return $wrote;
     }
 
     /**
@@ -183,7 +222,7 @@ class StaticResponse
         $path = $this->getDiskPath();
 
         if ($this->config->get('static.files.include_domain')) {
-            $path .= '/' . $this->getDomain($request);
+            $path .= '/'.$this->getDomain($request);
         }
 
         return $path;
@@ -191,7 +230,7 @@ class StaticResponse
 
     public function getDiskPath()
     {
-        return rtrim($this->config->get('filesystems.disks.' . $this->config->get('static.files.disk') . '.root'), '/');
+        return rtrim($this->config->get('filesystems.disks.'.$this->config->get('static.files.disk').'.root'), '/');
     }
 
     /**
@@ -221,7 +260,7 @@ class StaticResponse
             return null;
         }
 
-        return '.' . $extension;
+        return '.'.$extension;
     }
 
     /**

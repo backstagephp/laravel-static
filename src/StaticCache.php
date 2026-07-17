@@ -19,10 +19,25 @@ class StaticCache
     public function clear(?array $paths = null): bool
     {
         if (! is_null($paths)) {
-            return $this->disk()->delete($paths);
+            return $this->disk()->delete($this->withCompressedVariants($paths));
         }
 
         return $this->files->cleanDirectory($this->disk()->getConfig()['root']);
+    }
+
+    /**
+     * Expand a list of static file paths to also include their precompressed
+     * siblings (.gz / .br), so a targeted clear doesn't leave orphaned compressed
+     * copies behind. Deleting a path that doesn't exist is a harmless no-op.
+     *
+     * @param  array<int, string>  $paths
+     * @return array<int, string>
+     */
+    protected function withCompressedVariants(array $paths): array
+    {
+        return collect($paths)
+            ->flatMap(fn (string $path) => [$path, $path.'.gz', $path.'.br'])
+            ->all();
     }
 
     /**

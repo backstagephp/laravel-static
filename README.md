@@ -167,6 +167,38 @@ Hostnames are matched against the request host (case-insensitive) and support `*
 ],
 ```
 
+### Precompression (gzip / brotli)
+
+Write precompressed copies of each static file alongside the original so your web
+server can serve them directly, without compressing on every request. gzip is
+built into PHP; brotli requires the [`ext-brotli`](https://github.com/kjdev/php-ext-brotli)
+extension and is silently skipped when it isn't installed.
+
+```php
+'compression' => [
+    'gzip' => true,             // Write a .gz copy (env: STATIC_COMPRESS_GZIP)
+    'gzip_level' => 9,          // 0-9, higher is smaller/slower
+    'brotli' => false,          // Write a .br copy (env: STATIC_COMPRESS_BROTLI)
+    'brotli_level' => 11,       // 0-11
+    'keep_uncompressed' => true, // Also keep the plain .html copy
+],
+```
+
+By default each cached page has `page.html`, `page.html.gz`, and (optionally)
+`page.html.br` siblings. Compression happens once at cache-write time, so a high
+level is usually worth it.
+
+**Storing only the compressed file.** Set `keep_uncompressed` to `false` to skip the
+plain `.html` copy and roughly halve disk usage. The uncompressed file is only
+dropped when a compressed one was actually written, so a page is never left with
+nothing to serve (e.g. brotli requested but `ext-brotli` missing). The trade-off is
+that your web server must then serve the compressed file to **every** client,
+including the rare one that doesn't send `Accept-Encoding: gzip` — with nginx that
+means `gzip_static always;` plus `gunzip on;` to decompress on the fly for those
+clients. If you keep the uncompressed copy, nginx falls back to it automatically.
+
+See [Web Server Configuration](#web-server-configuration) for serving these files.
+
 ## Commands
 
 ### Build Static Cache
@@ -468,6 +500,24 @@ server {
     }
 }
 ```
+
+#### Serving precompressed files
+
+If you enabled [precompression](#precompression-gzip--brotli), turn on nginx's
+static-precompression modules so it serves the `.gz` / `.br` siblings when the
+client supports them. nginx looks for `<file>.gz` / `<file>.br` matching the file
+it's about to serve, so no path changes are needed — just add:
+
+```nginx
+# gzip_static is built into nginx; brotli_static needs the ngx_brotli module.
+gzip_static on;
+brotli_static on;
+```
+
+Place these inside the `server` (or `location`) block above. When a `.br`/`.gz`
+sibling exists and the request carries a matching `Accept-Encoding`, nginx serves
+it and sets `Content-Encoding` automatically; otherwise it falls back to the
+uncompressed file.
 
 ### Apache
 
