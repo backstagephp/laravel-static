@@ -45,7 +45,7 @@ class StaticBuildCommand extends Command
         }
 
         if ($this->config->get('static.build.clear_before_start')) {
-            $this->call(StaticClearCommand::class);
+            $this->call(StaticClearCommand::class, ['--force' => true]);
         }
 
         if ($this->config->get('static.build.force_root_url')) {

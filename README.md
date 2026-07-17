@@ -197,6 +197,13 @@ Clear all cached static files:
 php artisan static:clear
 ```
 
+The command asks for confirmation before clearing. Skip the prompt (e.g. in
+CI/deploy scripts) with `--force`:
+
+```bash
+php artisan static:clear --force
+```
+
 Clear specific URIs:
 
 ```bash
