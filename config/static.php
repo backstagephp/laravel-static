@@ -39,12 +39,15 @@ return [
         'default_scheme' => 'https',
 
         /**
-         * Force the root URL used when generating links to config('app.url').
-         * Enable this when your server serves the app through index.php (e.g. missing
-         * URL rewriting), which would otherwise leak "index.php" into generated links.
-         * Note: this only affects the 'routes' driver, since the 'crawler' driver
-         * renders pages in a separate HTTP request. It also overrides root URL
-         * generation for the duration of the build process.
+         * Force the root URL used when generating links to config('app.url'), for every
+         * request as well as for the duration of a build. Enable this when your server
+         * serves the app through index.php (e.g. missing URL rewriting), which would
+         * otherwise leak "index.php" into generated links.
+         *
+         * While this is disabled, a response rendered under a base URL (any
+         * "/index.php/..." style prefix) is not cached at all: its links carry that
+         * prefix but its cache file is keyed on the clean path, so storing it would
+         * replace the real page with a prefixed copy.
          */
         'force_root_url' => env('STATIC_FORCE_ROOT_URL', false),
 

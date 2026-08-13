@@ -69,7 +69,34 @@ class StaticResponse
                 // TTFB checkers use HEAD requests,
                 // therefore we treat them the same as GET
                 $request->isMethod('HEAD')
-            );
+            ) &&
+            ! $this->rendersPrefixedUrls($request);
+    }
+
+    /**
+     * Whether the response was rendered with the request's base URL baked into
+     * every link it generated.
+     *
+     * A request can reach the front controller under a prefix — /index.php/about
+     * on a server without URL rewriting, or a spelling that hides it from such a
+     * rewrite, like /index%2ephp/about — and Symfony then reports that prefix as
+     * the request's base URL. The page still renders, but the URL generator
+     * prepends the prefix to every link, canonical and asset URL on it. The cache
+     * file, meanwhile, is keyed on the path with the prefix stripped, so writing
+     * it would overwrite the clean page with a prefixed copy — which is to say
+     * anyone who can reach the app can rewrite cached pages by asking for them
+     * under a prefix.
+     *
+     * Forcing the root URL pins link generation to app.url, which makes the render
+     * independent of how the request came in, and so safe to store.
+     */
+    protected function rendersPrefixedUrls(Request $request): bool
+    {
+        if ($this->config->get('static.build.force_root_url')) {
+            return false;
+        }
+
+        return $request->getBaseUrl() !== '';
     }
 
     /**
