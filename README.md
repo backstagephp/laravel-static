@@ -262,6 +262,50 @@ Clear only the cached files generated for requests with a query string (e.g.
 php artisan static:clear --only-with-query-strings
 ```
 
+### Inspect the Static Cache
+
+Report what the cache actually holds and what is driving its size:
+
+```bash
+php artisan static:status
+```
+
+Nothing is ever removed from the cache except by `static:clear`, and a file is
+written per unique URI *including its query string* — so a cache that fills up a
+server is usually not the pages themselves but their variants. This command shows
+where the size sits before you decide what to prune.
+
+```
+  Files on disk ........................................................... 24
+  Size on disk ........................................................ 1.7 MB
+  Cached pages ............................... 17 (compressed copies excluded)
+  Distinct URLs ........................................................... 11
+
+   WARN  6 of 17 cached pages (35%) are extra query-string variants of 11 distinct URLs.
+```
+
+Followed by a breakdown per host, per file type (where the multiplication from
+gzip/brotli siblings shows up), storage held by URLs with and without a query
+string, the largest directories, the URLs with the most cached variants, the most
+common query parameters, an age distribution, and the largest single files. It
+closes with the config settings that govern cache growth, so the numbers and the
+levers are on one screen.
+
+The two tables that usually explain a runaway cache are **top URLs by variants**
+and **most common query parameters** — if `utm_source` or `fbclid` sits at the
+top, tracking parameters are multiplying your cache and
+`static:clear --only-with-query-strings` reclaims that space immediately.
+
+| Option | Description |
+| --- | --- |
+| `--disk=` | Disk to inspect, defaults to the configured static disk |
+| `--limit=` | Rows per top-N table (default 15) |
+| `--json` | Machine-readable output, for monitoring or a disk-usage alert |
+
+Compressed siblings count towards size but not towards the page count, so
+enabling gzip never looks like cache growth. Only local disks can be inspected:
+walking a remote disk would mean one API call per file.
+
 ## Advanced Usage
 
 ### Multi-Domain Support

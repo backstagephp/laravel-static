@@ -4,6 +4,7 @@ namespace Backstage\Static\Laravel;
 
 use Backstage\Static\Laravel\Commands\StaticBuildCommand;
 use Backstage\Static\Laravel\Commands\StaticClearCommand;
+use Backstage\Static\Laravel\Commands\StaticStatusCommand;
 use Backstage\Static\Laravel\Middleware\PreventStaticResponseMiddleware;
 use Illuminate\Contracts\Http\Kernel;
 use Spatie\LaravelPackageTools\Package;
@@ -19,6 +20,7 @@ class StaticServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 StaticClearCommand::class,
                 StaticBuildCommand::class,
+                StaticStatusCommand::class,
             ]);
     }
 
